@@ -7,10 +7,12 @@ export default function Chat({ isArtist }) {
   const [inputText, setInputText] = useState('');
   const [rateLimitTimer, setRateLimitTimer] = useState(null);
   const [isBlocked, setIsBlocked] = useState(false);
-  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSubmit = (e) => {
@@ -42,7 +44,7 @@ export default function Chat({ isArtist }) {
       </div>
 
       {/* Messages list */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-2 text-sm max-h-[300px] md:max-h-[500px]">
+      <div ref={chatContainerRef} className="flex-1 p-4 overflow-y-auto space-y-2 text-sm max-h-[300px] md:max-h-[500px]">
         {messages.map((m) => {
           if (m.type === 'system') {
             return (
@@ -65,7 +67,6 @@ export default function Chat({ isArtist }) {
             </div>
           );
         })}
-        <div ref={messagesEndRef} />
       </div>
 
       {!isArtist ? (

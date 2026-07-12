@@ -17,7 +17,7 @@ export default function Home() {
   const [maxPlayers, setMaxPlayers] = useState(8);
   const [rounds, setRounds] = useState(3);
   const [drawTime, setDrawTime] = useState(80);
-  const [hintTime, setHintTime] = useState(30);
+  const [hintTime, setHintTime] = useState(0);
   const [wordChoicesCount, setWordChoicesCount] = useState(3);
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState(['general']);
@@ -353,19 +353,7 @@ export default function Home() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Hint Interval</label>
-                <select
-                  value={hintTime}
-                  onChange={(e) => setHintTime(parseInt(e.target.value))}
-                  className="w-full glass-input px-2.5 py-1.5 rounded-lg text-xs"
-                >
-                  <option value={0} className="bg-brand-dark">No Hints</option>
-                  {[15, 20, 25, 30, 40].map(n => (
-                    <option key={n} value={n} className="bg-brand-dark">{n} Seconds</option>
-                  ))}
-                </select>
-              </div>
+
 
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Word Choices</label>

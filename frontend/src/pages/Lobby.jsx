@@ -7,6 +7,13 @@ export default function Lobby() {
   const { room, playerId, isHost, startGame, updateSettings, leaveRoom, kickPlayer, error } = useSocket();
 
   const [categories, setCategories] = useState([]);
+  const [copied, setCopied] = useState(false);
+
+  const copyRoomCode = () => {
+    navigator.clipboard.writeText(room.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -73,9 +80,17 @@ export default function Lobby() {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <span className="text-[10px] uppercase tracking-widest text-purple-400 font-bold">Room Code</span>
-                <h1 className="text-3xl font-black font-mono tracking-widest text-white leading-none">
-                  {room.code}
-                </h1>
+                <div className="flex items-center gap-2 mt-1">
+                  <h1 className="text-3xl font-black font-mono tracking-widest text-white leading-none">
+                    {room.code}
+                  </h1>
+                  <button
+                    onClick={copyRoomCode}
+                    className="px-2 py-1 bg-white/10 hover:bg-white/20 active:scale-95 transition text-[10px] font-bold rounded border border-white/10 text-purple-300"
+                  >
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
               </div>
               <button
                 onClick={leaveRoom}
@@ -143,20 +158,7 @@ export default function Lobby() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-1">Hint Interval</label>
-                  <select
-                    value={room.settings.hintTime}
-                    onChange={handleHintTimeChange}
-                    disabled={!isHost}
-                    className="w-full glass-input px-2 py-1.5 rounded-lg text-xs"
-                  >
-                    <option value={0} className="bg-brand-dark">No Hints</option>
-                    {[15, 20, 25, 30, 40].map(n => (
-                      <option key={n} value={n} className="bg-brand-dark">{n} Sec</option>
-                    ))}
-                  </select>
-                </div>
+
 
                 <div>
                   <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-1">Word Choices</label>

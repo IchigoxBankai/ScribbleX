@@ -360,7 +360,7 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
 
   return (
     <div 
-      className="relative w-full h-full aspect-[4/3] rounded-xl overflow-hidden shadow-2xl bg-white border border-gray-200"
+      className="relative w-full max-h-[38vh] md:max-h-none aspect-[4/3] rounded-xl overflow-hidden shadow-2xl bg-white border border-gray-200"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
