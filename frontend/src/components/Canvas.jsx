@@ -393,12 +393,6 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
           }}
         />
       )}
-      {!isArtist && (
-        <div className="absolute top-3 left-3 bg-gray-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-white/10 pointer-events-none select-none">
-          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-          Viewing Artist Drawing...
-        </div>
-      )}
     </div>
   );
 }

@@ -103,6 +103,7 @@ class GameManager {
       return;
     }
 
+    room.gameState.currentArtist = artistId;
     room.gameState.correctGuessers = [];
     room.gameState.currentWord = '';
     drawingManager.clearDrawing(room);
