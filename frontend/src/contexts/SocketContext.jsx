@@ -81,6 +81,20 @@ export const SocketProvider = ({ children }) => {
       setCorrectGuessSoundTrigger(prev => prev + 1);
     });
 
+    newSocket.on('timerUpdate', ({ timer, status }) => {
+      setRoom(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          gameState: {
+            ...prev.gameState,
+            timer,
+            status
+          }
+        };
+      });
+    });
+
     newSocket.on('kicked', () => {
       setError('You were kicked from the room.');
       setRoom(null);

@@ -181,10 +181,10 @@ export default function Game() {
 
         {/* Sidebar logs: Scoreboard and Chat (Col span 1) */}
         <div className="lg:col-span-1 flex flex-col gap-4">
-          <div className="flex-1 min-h-[220px]">
+          <div className="flex-1 min-h-[220px] order-2 lg:order-1">
             <Scoreboard />
           </div>
-          <div className="flex-1 min-h-[220px]">
+          <div className="flex-1 min-h-[220px] order-1 lg:order-2">
             <Chat isArtist={isArtist} />
           </div>
         </div>
