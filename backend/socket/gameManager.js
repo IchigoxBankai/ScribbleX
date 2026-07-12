@@ -216,7 +216,7 @@ class GameManager {
     }
 
     room.gameState.status = 'ROUND_END';
-    room.gameState.timer = 8; // 8 seconds display stats
+    room.gameState.timer = 5; // 5 seconds display stats
 
     // Find if anyone got 0 points/didn't guess
     this.broadcastRoomUpdate(room);

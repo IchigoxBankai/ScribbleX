@@ -15,7 +15,7 @@ export default function Timer() {
   // Choose maximum progress values depending on state
   let maxDuration = totalDrawTime;
   if (status === 'WORD_SELECTING') maxDuration = 10;
-  if (status === 'ROUND_END') maxDuration = 8;
+  if (status === 'ROUND_END') maxDuration = 5;
 
   // Calculate stroke dashoffset for visual circular timer
   const percentageRemaining = Math.max(0, Math.min(100, (timer / maxDuration) * 100));
