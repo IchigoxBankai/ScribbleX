@@ -68,30 +68,33 @@ export default function Chat({ isArtist }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Box */}
-      <form onSubmit={handleSubmit} className="p-3 bg-black/20 border-t border-white/10 flex items-center gap-2">
-        <input
-          type="text"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder={
-            isArtist
-              ? "You are drawing! You can't chat."
-              : isBlocked
-              ? "Spam prevention active..."
-              : "Type your guess here..."
-          }
-          disabled={isArtist || isBlocked}
-          className="flex-1 glass-input px-3.5 py-2 rounded-lg text-sm w-full placeholder:text-gray-500 disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={isArtist || !inputText.trim() || isBlocked}
-          className="p-2 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-900/50 disabled:opacity-50 text-white rounded-lg transition"
-        >
-          <Send className="w-4 h-4" />
-        </button>
-      </form>
+      {!isArtist ? (
+        <form onSubmit={handleSubmit} className="p-3 bg-black/20 border-t border-white/10 flex items-center gap-2">
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder={
+              isBlocked
+                ? "Spam prevention active..."
+                : "Type your guess here..."
+            }
+            disabled={isBlocked}
+            className="flex-1 glass-input px-3.5 py-2 rounded-lg text-sm w-full placeholder:text-gray-500 disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={!inputText.trim() || isBlocked}
+            className="p-2 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-900/50 disabled:opacity-50 text-white rounded-lg transition"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </form>
+      ) : (
+        <div className="p-3 bg-purple-950/20 text-purple-400 font-bold border-t border-white/10 text-center text-xs">
+          You are the artist! Draw the word.
+        </div>
+      )}
     </div>
   );
 }

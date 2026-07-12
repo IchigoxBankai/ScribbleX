@@ -6,6 +6,7 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [cursorCoords, setCursorCoords] = useState(null); // cursor tracking for custom pencil/eraser circle
   const historyRef = useRef([]); // local draw actions history
   const redoRef = useRef([]); // local redo history
   const lastCoordsRef = useRef(null);
@@ -44,7 +45,6 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
         historyRef.current = [];
         redrawHistory();
       } else if (action.type === 'undo') {
-        // Find last action's strokeId
         const lastAction = historyRef.current[historyRef.current.length - 1];
         if (lastAction && lastAction.strokeId) {
           const targetStrokeId = lastAction.strokeId;
@@ -54,9 +54,7 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
         }
         redrawHistory();
       } else if (action.type === 'redo') {
-        // Redo stack is managed locally by each client if they are the artist,
-        // but for others we just clear redo or handle custom sync.
-        // The simplest is letting server state re-sync on room updates.
+        // Redo is handled locally or via server re-sync
       } else {
         applyDrawAction(action);
         historyRef.current.push(action);
@@ -98,7 +96,6 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     });
   };
 
-  // Run a canvas action
   const applyDrawAction = (action) => {
     const ctx = contextRef.current;
     if (!ctx) return;
@@ -138,15 +135,24 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     if (!canvas) return { x: 0, y: 0 };
 
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    // Multi-device safe touch coordinate check
+    const touch = e.touches && e.touches.length > 0 
+      ? e.touches[0] 
+      : (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : null);
+
+    const clientX = touch ? touch.clientX : e.clientX;
+    const clientY = touch ? touch.clientY : e.clientY;
 
     const relX = clientX - rect.left;
     const relY = clientY - rect.top;
 
     return {
       x: relX / rect.width,
-      y: relY / rect.height
+      y: relY / rect.height,
+      clientX: relX,
+      clientY: relY,
+      scale: rect.width / LOGICAL_WIDTH
     };
   };
 
@@ -177,7 +183,6 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     strokeIdRef.current = strokeId;
     lastCoordsRef.current = coords;
 
-    // Draw single dot on touch/click start
     const action = {
       type: 'draw',
       color: colorToUse,
@@ -193,13 +198,26 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
   };
 
   const drawHandler = (e) => {
-    if (!isDrawing || !isArtist) return;
+    if (!isArtist) return;
     e.preventDefault();
 
     const coords = getCoordinates(e);
+    
+    // Update custom brush cursor coordinates on move
+    if (tool !== 'fill') {
+      setCursorCoords({
+        x: coords.clientX,
+        y: coords.clientY,
+        scale: coords.scale
+      });
+    } else {
+      setCursorCoords(null);
+    }
+
+    if (!isDrawing) return;
+
     const colorToUse = tool === 'eraser' ? '#FFFFFF' : brushColor;
 
-    // Send segment in real-time
     const action = {
       type: 'draw',
       color: colorToUse,
@@ -222,20 +240,24 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     lastCoordsRef.current = null;
   };
 
+  const handleMouseEnter = () => {
+    // Show circular brush on hover
+  };
+
+  const handleMouseLeave = () => {
+    setCursorCoords(null);
+    stopDrawingHandler();
+  };
+
   const undo = () => {
     if (!isArtist || historyRef.current.length === 0) return;
     
-    // Find the last stroke/action and its strokeId
     const lastAction = historyRef.current[historyRef.current.length - 1];
     if (lastAction) {
       if (lastAction.strokeId) {
         const targetStrokeId = lastAction.strokeId;
-        
-        // Push undone actions to redo stack
         const undone = historyRef.current.filter(act => act.strokeId === targetStrokeId);
         redoRef.current.push({ type: 'stroke', strokeId: targetStrokeId, actions: undone });
-        
-        // Remove from local history
         historyRef.current = historyRef.current.filter(act => act.strokeId !== targetStrokeId);
       } else {
         const undone = historyRef.current.pop();
@@ -337,18 +359,40 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
   };
 
   return (
-    <div className="relative w-full h-full aspect-[4/3] rounded-xl overflow-hidden shadow-2xl bg-white border border-gray-200">
+    <div 
+      className="relative w-full h-full aspect-[4/3] rounded-xl overflow-hidden shadow-2xl bg-white border border-gray-200"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <canvas
         ref={canvasRef}
-        className={`w-full h-full block ${isArtist ? 'cursor-crosshair' : 'cursor-not-allowed'}`}
+        className={`w-full h-full block touch-none ${isArtist ? 'cursor-none' : 'cursor-not-allowed'}`}
         onMouseDown={startDrawingHandler}
         onMouseMove={drawHandler}
         onMouseUp={stopDrawingHandler}
-        onMouseLeave={stopDrawingHandler}
         onTouchStart={startDrawingHandler}
         onTouchMove={drawHandler}
         onTouchEnd={stopDrawingHandler}
       />
+      {/* Circle brush/eraser cursor follower */}
+      {isArtist && cursorCoords && (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${cursorCoords.x}px`,
+            top: `${cursorCoords.y}px`,
+            width: `${brushSize * cursorCoords.scale}px`,
+            height: `${brushSize * cursorCoords.scale}px`,
+            transform: 'translate(-50%, -50%)',
+            borderRadius: '50%',
+            border: tool === 'eraser' ? '2px dashed #9333ea' : '1px solid rgba(0,0,0,0.4)',
+            boxShadow: '0 0 0 1px rgba(255,255,255,0.8)',
+            backgroundColor: tool === 'eraser' ? 'rgba(147,51,234,0.1)' : brushColor,
+            pointerEvents: 'none',
+            opacity: 0.8
+          }}
+        />
+      )}
       {!isArtist && (
         <div className="absolute top-3 left-3 bg-gray-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-white/10 pointer-events-none select-none">
           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
