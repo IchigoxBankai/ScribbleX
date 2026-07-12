@@ -6,7 +6,7 @@ import { Settings, Play, Users, BookOpen, AlertCircle } from 'lucide-react';
 const EMOJIS = ['🦊', '🐱', '🐶', '🦁', '🐻', '🐨', '🐼', '🐹', '🐰', '🐸', '🐙', '🦄', '🦖', '🐝', '🐬', '🎨'];
 
 export default function Home() {
-  const { createRoom, joinRoom, error, setError } = useSocket();
+  const { createRoom, joinRoom, isConnected, error, setError } = useSocket();
 
   const [activeTab, setActiveTab] = useState('join'); // 'create' | 'join' | 'how-to'
   const [name, setName] = useState('');
@@ -138,6 +138,18 @@ export default function Home() {
           </motion.div>
         )}
 
+        {/* Server Connection status */}
+        {!isConnected && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3.5 bg-yellow-500/10 border border-yellow-500/35 text-yellow-300 text-xs rounded-xl flex items-center gap-2"
+          >
+            <div className="w-2 h-2 rounded-full bg-yellow-500 animate-ping shrink-0" />
+            <span>Connecting to game server... Please wait.</span>
+          </motion.div>
+        )}
+
         {/* Tab switchers */}
         <div className="flex gap-2 mb-6 p-1 bg-black/35 rounded-xl border border-white/5">
           <button
@@ -237,10 +249,11 @@ export default function Home() {
 
             <button
               type="submit"
-              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 font-extrabold rounded-xl shadow-lg hover:shadow-purple-500/20 active:scale-95 transition text-sm flex items-center justify-center gap-2 border border-white/10 mt-6"
+              disabled={!isConnected}
+              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 disabled:from-purple-900/40 disabled:to-pink-900/40 font-extrabold rounded-xl shadow-lg hover:shadow-purple-500/20 active:scale-95 transition text-sm flex items-center justify-center gap-2 border border-white/10 mt-6"
             >
               <Play className="w-4 h-4 fill-white" />
-              JOIN ROOM
+              {isConnected ? 'JOIN ROOM' : 'CONNECTING...'}
             </button>
           </form>
         )}
@@ -392,10 +405,11 @@ export default function Home() {
 
             <button
               type="submit"
-              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 font-extrabold rounded-xl shadow-lg hover:shadow-purple-500/20 active:scale-95 transition text-sm flex items-center justify-center gap-2 border border-white/10 mt-6"
+              disabled={!isConnected}
+              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 disabled:from-purple-900/40 disabled:to-pink-900/40 font-extrabold rounded-xl shadow-lg hover:shadow-purple-500/20 active:scale-95 transition text-sm flex items-center justify-center gap-2 border border-white/10 mt-6"
             >
               <Settings className="w-4 h-4 animate-spin-slow" />
-              CREATE ROOM
+              {isConnected ? 'CREATE ROOM' : 'CONNECTING...'}
             </button>
           </form>
         )}

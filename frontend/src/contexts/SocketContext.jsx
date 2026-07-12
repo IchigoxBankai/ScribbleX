@@ -13,6 +13,7 @@ export const useSocket = () => {
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
   const [room, setRoom] = useState(null);
   const [playerId, setPlayerId] = useState(() => localStorage.getItem('scribblex_playerId') || null);
   const [isHost, setIsHost] = useState(false);
@@ -32,6 +33,14 @@ export const SocketProvider = ({ children }) => {
     });
 
     setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      setIsConnected(true);
+    });
+
+    newSocket.on('disconnect', () => {
+      setIsConnected(false);
+    });
 
     // Save playerId when joined
     newSocket.on('roomJoined', ({ room: joinedRoom, playerId: joinedPlayerId, isHost: hostStatus }) => {
@@ -159,6 +168,7 @@ export const SocketProvider = ({ children }) => {
   return (
     <SocketContext.Provider value={{
       socket,
+      isConnected,
       room,
       playerId,
       isHost,
