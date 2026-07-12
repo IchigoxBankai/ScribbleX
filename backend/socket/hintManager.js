@@ -36,39 +36,7 @@ class HintManager {
    * @returns {boolean} Whether a new hint was revealed
    */
   updateHint(hintState, percentageElapsed) {
-    if (!hintState || !hintState.shuffleOrder || hintState.shuffleOrder.length === 0) {
-      return false;
-    }
-
-    const totalRevealable = hintState.shuffleOrder.length;
-    let targetRevealCount = 0;
-
-    // Rules:
-    // - 20% elapsed: reveal 20% of letters (min 1, max totalRevealable - 1)
-    // - 50% elapsed: reveal 50% of letters (min 2, max totalRevealable - 1)
-    // - 80% elapsed: reveal 80% of letters (min 3, max totalRevealable - 1)
-    if (percentageElapsed >= 80) {
-      targetRevealCount = Math.max(3, Math.floor(totalRevealable * 0.8));
-    } else if (percentageElapsed >= 50) {
-      targetRevealCount = Math.max(2, Math.floor(totalRevealable * 0.5));
-    } else if (percentageElapsed >= 20) {
-      targetRevealCount = Math.max(1, Math.floor(totalRevealable * 0.2));
-    }
-
-    // Guard: never reveal the entire word (leave at least 1 char hidden unless word has only 1 char)
-    if (totalRevealable > 1 && targetRevealCount >= totalRevealable) {
-      targetRevealCount = totalRevealable - 1;
-    }
-
-    let revealedAny = false;
-    while (hintState.revealedCount < targetRevealCount) {
-      const indexToReveal = hintState.shuffleOrder[hintState.revealedCount];
-      hintState.currentHint[indexToReveal] = hintState.word[indexToReveal];
-      hintState.revealedCount++;
-      revealedAny = true;
-    }
-
-    return revealedAny;
+    return false;
   }
 }
 
