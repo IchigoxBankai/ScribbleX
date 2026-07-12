@@ -8,6 +8,8 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
   const [isDrawing, setIsDrawing] = useState(false);
   const historyRef = useRef([]); // local draw actions history
   const redoRef = useRef([]); // local redo history
+  const lastCoordsRef = useRef(null);
+  const strokeIdRef = useRef(null);
 
   // Fixed logical width and height for coordination synchronization
   const LOGICAL_WIDTH = 800;
@@ -23,10 +25,8 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     context.lineJoin = 'round';
     contextRef.current = context;
 
-    // Apply background color to canvas (white by default)
     clearCanvasLocal(false);
 
-    // Load initial drawing history if reconnecting
     if (drawingHistory && drawingHistory.length > 0) {
       drawingHistory.forEach(action => {
         applyDrawAction(action);
@@ -40,16 +40,25 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     if (!socket) return;
 
     const handleDrawAction = (action) => {
-      applyDrawAction(action);
       if (action.type === 'clear') {
         historyRef.current = [];
+        redrawHistory();
       } else if (action.type === 'undo') {
-        historyRef.current.pop();
+        // Find last action's strokeId
+        const lastAction = historyRef.current[historyRef.current.length - 1];
+        if (lastAction && lastAction.strokeId) {
+          const targetStrokeId = lastAction.strokeId;
+          historyRef.current = historyRef.current.filter(act => act.strokeId !== targetStrokeId);
+        } else {
+          historyRef.current.pop();
+        }
         redrawHistory();
       } else if (action.type === 'redo') {
-        // Redo is managed by history state replay
-        redrawHistory();
+        // Redo stack is managed locally by each client if they are the artist,
+        // but for others we just clear redo or handle custom sync.
+        // The simplest is letting server state re-sync on room updates.
       } else {
+        applyDrawAction(action);
         historyRef.current.push(action);
       }
     };
@@ -89,7 +98,7 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     });
   };
 
-  // Run a custom canvas action
+  // Run a canvas action
   const applyDrawAction = (action) => {
     const ctx = contextRef.current;
     if (!ctx) return;
@@ -124,7 +133,6 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     }
   };
 
-  // Convert client coordinate into logical relative coordinate
   const getCoordinates = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -133,18 +141,15 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-    // Relative to canvas element
     const relX = clientX - rect.left;
     const relY = clientY - rect.top;
 
-    // Convert to 0.0 - 1.0 normalized coordinates
     return {
       x: relX / rect.width,
       y: relY / rect.height
     };
   };
 
-  // Start Drawing
   const startDrawingHandler = (e) => {
     if (!isArtist) return;
     e.preventDefault();
@@ -167,77 +172,98 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
 
     setIsDrawing(true);
     const colorToUse = tool === 'eraser' ? '#FFFFFF' : brushColor;
+    const strokeId = Math.random().toString(36).substr(2, 9);
     
-    // Create new path action
+    strokeIdRef.current = strokeId;
+    lastCoordsRef.current = coords;
+
+    // Draw single dot on touch/click start
     const action = {
       type: 'draw',
       color: colorToUse,
       size: brushSize,
-      points: [coords]
+      strokeId,
+      points: [coords, coords]
     };
 
     historyRef.current.push(action);
     redoRef.current = [];
     applyDrawAction(action);
+    sendDrawAction(action);
   };
 
-  // Continue Drawing
   const drawHandler = (e) => {
     if (!isDrawing || !isArtist) return;
     e.preventDefault();
 
     const coords = getCoordinates(e);
-    const currentAction = historyRef.current[historyRef.current.length - 1];
-    
-    if (currentAction && currentAction.type === 'draw') {
-      currentAction.points.push(coords);
-      
-      // Draw live locally
-      const ctx = contextRef.current;
-      ctx.strokeStyle = currentAction.color;
-      ctx.lineWidth = currentAction.size;
-      ctx.beginPath();
-      
-      const pts = currentAction.points;
-      const len = pts.length;
-      ctx.moveTo(pts[len - 2].x * LOGICAL_WIDTH, pts[len - 2].y * LOGICAL_HEIGHT);
-      ctx.lineTo(pts[len - 1].x * LOGICAL_WIDTH, pts[len - 1].y * LOGICAL_HEIGHT);
-      ctx.stroke();
-    }
+    const colorToUse = tool === 'eraser' ? '#FFFFFF' : brushColor;
+
+    // Send segment in real-time
+    const action = {
+      type: 'draw',
+      color: colorToUse,
+      size: brushSize,
+      strokeId: strokeIdRef.current,
+      points: [lastCoordsRef.current, coords]
+    };
+
+    historyRef.current.push(action);
+    applyDrawAction(action);
+    sendDrawAction(action);
+
+    lastCoordsRef.current = coords;
   };
 
-  // Stop Drawing
   const stopDrawingHandler = () => {
     if (!isDrawing || !isArtist) return;
     setIsDrawing(false);
-
-    // Send final path to server
-    const currentAction = historyRef.current[historyRef.current.length - 1];
-    if (currentAction) {
-      sendDrawAction(currentAction);
-    }
+    strokeIdRef.current = null;
+    lastCoordsRef.current = null;
   };
 
-  // External commands
   const undo = () => {
     if (!isArtist || historyRef.current.length === 0) return;
-    const action = { type: 'undo' };
-    const undone = historyRef.current.pop();
-    redoRef.current.push(undone);
-    redrawHistory();
-    sendDrawAction(action);
+    
+    // Find the last stroke/action and its strokeId
+    const lastAction = historyRef.current[historyRef.current.length - 1];
+    if (lastAction) {
+      if (lastAction.strokeId) {
+        const targetStrokeId = lastAction.strokeId;
+        
+        // Push undone actions to redo stack
+        const undone = historyRef.current.filter(act => act.strokeId === targetStrokeId);
+        redoRef.current.push({ type: 'stroke', strokeId: targetStrokeId, actions: undone });
+        
+        // Remove from local history
+        historyRef.current = historyRef.current.filter(act => act.strokeId !== targetStrokeId);
+      } else {
+        const undone = historyRef.current.pop();
+        redoRef.current.push({ type: 'single', action: undone });
+      }
+      
+      redrawHistory();
+      sendDrawAction({ type: 'undo' });
+    }
   };
 
   const redo = () => {
     if (!isArtist || redoRef.current.length === 0) return;
-    const action = { type: 'redo' };
-    const redone = redoRef.current.pop();
-    historyRef.current.push(redone);
-    applyDrawAction(redone);
-    sendDrawAction(action);
+    
+    const item = redoRef.current.pop();
+    if (item.type === 'stroke') {
+      item.actions.forEach(action => {
+        historyRef.current.push(action);
+        applyDrawAction(action);
+        sendDrawAction(action);
+      });
+    } else if (item.type === 'single') {
+      historyRef.current.push(item.action);
+      applyDrawAction(item.action);
+      sendDrawAction(item.action);
+    }
   };
 
-  // Expose undo/redo/clear via element handles if needed
   useEffect(() => {
     window.canvasUndo = undo;
     window.canvasRedo = redo;
@@ -249,7 +275,6 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     };
   }, [brushColor, brushSize, tool]);
 
-  // Flood Fill helper
   const floodFill = (canvas, startX, startY, fillColor) => {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
@@ -266,7 +291,6 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
     const bTarget = data[startIdx + 2];
     const aTarget = data[startIdx + 3];
 
-    // Helper to parse target hex/rgb color
     const hexToRgb = (hex) => {
       const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
       const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);

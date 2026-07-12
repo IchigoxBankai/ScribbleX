@@ -15,7 +15,7 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [room, setRoom] = useState(null);
-  const [playerId, setPlayerId] = useState(() => localStorage.getItem('scribblex_playerId') || null);
+  const [playerId, setPlayerId] = useState(() => sessionStorage.getItem('scribblex_playerId') || null);
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -48,15 +48,15 @@ export const SocketProvider = ({ children }) => {
       setPlayerId(joinedPlayerId);
       setIsHost(hostStatus);
       setError(null);
-      localStorage.setItem('scribblex_playerId', joinedPlayerId);
-      localStorage.setItem('scribblex_roomCode', joinedRoom.code);
+      sessionStorage.setItem('scribblex_playerId', joinedPlayerId);
+      sessionStorage.setItem('scribblex_roomCode', joinedRoom.code);
     });
 
     newSocket.on('roomUpdated', (updatedRoom) => {
       setRoom(updatedRoom);
       
       // Update isHost flag in case host changed
-      const localPlayerId = localStorage.getItem('scribblex_playerId');
+      const localPlayerId = sessionStorage.getItem('scribblex_playerId');
       const me = updatedRoom.players.find(p => p.id === localPlayerId);
       if (me) {
         setIsHost(me.isHost);
@@ -84,14 +84,14 @@ export const SocketProvider = ({ children }) => {
     newSocket.on('kicked', () => {
       setError('You were kicked from the room.');
       setRoom(null);
-      localStorage.removeItem('scribblex_roomCode');
+      sessionStorage.removeItem('scribblex_roomCode');
     });
 
     // Check for auto-reconnect if page refreshed
-    const storedRoomCode = localStorage.getItem('scribblex_roomCode');
-    const storedPlayerId = localStorage.getItem('scribblex_playerId');
-    const storedName = localStorage.getItem('scribblex_name');
-    const storedAvatar = localStorage.getItem('scribblex_avatar');
+    const storedRoomCode = sessionStorage.getItem('scribblex_roomCode');
+    const storedPlayerId = sessionStorage.getItem('scribblex_playerId');
+    const storedName = sessionStorage.getItem('scribblex_name');
+    const storedAvatar = sessionStorage.getItem('scribblex_avatar');
 
     if (storedRoomCode && storedPlayerId && storedName) {
       newSocket.emit('joinRoom', {
@@ -109,15 +109,15 @@ export const SocketProvider = ({ children }) => {
 
   const createRoom = (name, avatar, settings) => {
     if (!socket) return;
-    localStorage.setItem('scribblex_name', name);
-    localStorage.setItem('scribblex_avatar', avatar);
+    sessionStorage.setItem('scribblex_name', name);
+    sessionStorage.setItem('scribblex_avatar', avatar);
     socket.emit('createRoom', { name, avatar, settings });
   };
 
   const joinRoom = (name, avatar, roomCode) => {
     if (!socket) return;
-    localStorage.setItem('scribblex_name', name);
-    localStorage.setItem('scribblex_avatar', avatar);
+    sessionStorage.setItem('scribblex_name', name);
+    sessionStorage.setItem('scribblex_avatar', avatar);
     socket.emit('joinRoom', { name, avatar, roomCode, playerId });
   };
 
@@ -127,7 +127,7 @@ export const SocketProvider = ({ children }) => {
     setRoom(null);
     setMessages([]);
     setDrawingHistory([]);
-    localStorage.removeItem('scribblex_roomCode');
+    sessionStorage.removeItem('scribblex_roomCode');
   };
 
   const startGame = () => {
