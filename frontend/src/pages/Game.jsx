@@ -14,6 +14,13 @@ export default function Game() {
   const [brushSize, setBrushSize] = useState(5);
   const [tool, setTool] = useState('brush'); // 'brush' | 'eraser' | 'fill'
   const [isMuted, setIsMuted] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyRoomCode = () => {
+    navigator.clipboard.writeText(room.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   if (!room) return null;
 
@@ -113,6 +120,19 @@ export default function Game() {
             <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Drawing Artist</span>
             <div className="text-sm font-extrabold text-white truncate max-w-[120px]">
               {isArtist ? 'You!' : artistName}
+            </div>
+          </div>
+          <div className="h-8 w-px bg-white/15"></div>
+          <div>
+            <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Room Code</span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-sm font-black font-mono tracking-widest text-white">{room.code}</span>
+              <button
+                onClick={copyRoomCode}
+                className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 active:scale-95 transition text-[9px] font-bold rounded border border-white/10 text-purple-300"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
             </div>
           </div>
         </div>

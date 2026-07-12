@@ -137,10 +137,22 @@ io.on('connection', (socket) => {
 
   // 5. Select Word (from artist choice)
   socket.on('selectWord', ({ roomCode, playerId, word }) => {
+    console.log('[SELECT_WORD_EVENT]', { roomCode, playerId, word });
     const room = roomManager.getRoom(roomCode);
-    if (!room) return;
+    if (!room) {
+      console.log('[SELECT_WORD_EVENT] Room not found');
+      return;
+    }
+
+    console.log('[SELECT_WORD_EVENT] State verification:', {
+      status: room.gameState.status,
+      currentArtist: room.gameState.currentArtist,
+      playerId,
+      matches: room.gameState.currentArtist === playerId
+    });
 
     if (room.gameState.status !== 'WORD_SELECTING' || room.gameState.currentArtist !== playerId) {
+      console.log('[SELECT_WORD_EVENT] Validation failed');
       return;
     }
 
