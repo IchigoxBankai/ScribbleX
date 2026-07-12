@@ -186,7 +186,8 @@ class GameManager {
       const percentage = (elapsed / drawTime) * 100;
 
       // Update hints (only if hintTime is not 0)
-      if (room.settings.hintTime > 0) {
+      const hintTimeSetting = parseInt(room.settings.hintTime, 10);
+      if (!isNaN(hintTimeSetting) && hintTimeSetting > 0) {
         const hintUpdated = hintManager.updateHint(room.gameState.hintState, percentage);
         if (hintUpdated) {
           // Broadcast updated hint
