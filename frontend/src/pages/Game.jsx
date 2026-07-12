@@ -9,7 +9,7 @@ import Timer from '../components/Timer';
 import { Volume2, VolumeX, ShieldAlert } from 'lucide-react';
 
 export default function Game() {
-  const { room, playerId, correctGuessSoundTrigger, error } = useSocket();
+  const { room, playerId, isHost, playAgain, leaveRoom, correctGuessSoundTrigger, error } = useSocket();
   const [brushColor, setBrushColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
   const [tool, setTool] = useState('brush'); // 'brush' | 'eraser' | 'fill'
@@ -131,14 +131,32 @@ export default function Game() {
           )}
         </div>
 
-        {/* Right: Audio Control & Timer */}
-        <div className="flex items-center gap-4">
+        {/* Right: Audio Control, Reset Lobby, Leave Game & Timer */}
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => setIsMuted(!isMuted)}
             className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition border border-white/5 text-gray-300"
           >
             {isMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5" />}
           </button>
+          
+          {isHost && (
+            <button
+              onClick={playAgain}
+              className="px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded-lg border border-yellow-500/20 transition-colors"
+              title="Return all players to lobby"
+            >
+              Reset Lobby
+            </button>
+          )}
+          
+          <button
+            onClick={leaveRoom}
+            className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold rounded-lg border border-red-500/20 transition-colors"
+          >
+            Leave Game
+          </button>
+
           <Timer />
         </div>
       </div>
