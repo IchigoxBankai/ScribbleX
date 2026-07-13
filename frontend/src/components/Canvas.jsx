@@ -295,7 +295,7 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
       delete window.canvasRedo;
       delete window.canvasClear;
     };
-  }, [brushColor, brushSize, tool]);
+  }, [brushColor, brushSize, tool, isArtist, socket]);
 
   const floodFill = (canvas, startX, startY, fillColor) => {
     const ctx = canvas.getContext('2d');
