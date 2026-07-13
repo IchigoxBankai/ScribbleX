@@ -239,9 +239,9 @@ export default function Game() {
       {/* ============================================================== */}
       {/* MOBILE LAYOUT (Hidden on desktop) */}
       {/* ============================================================== */}
-      <div className="flex lg:hidden flex-col flex-1 gap-2 min-h-0 overflow-hidden">
+      <div className="flex lg:hidden flex-col gap-2 overflow-y-auto flex-1">
         {/* Canvas / Whiteboard area */}
-        <div className="flex-1 min-h-0 w-full relative flex flex-col justify-center items-center">
+        <div className="w-full relative flex flex-col justify-center items-center shrink-0 h-auto">
           <Canvas
             isArtist={isArtist}
             brushColor={brushColor}
