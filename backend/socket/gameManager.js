@@ -144,18 +144,21 @@ class GameManager {
     this.broadcastRoomUpdate(room);
 
     room.gameState.timerInterval = setInterval(() => {
-      room.gameState.timer--;
-      if (room.gameState.timer <= 0) {
+      try {
+        room.gameState.timer--;
+        if (room.gameState.timer <= 0) {
+          clearInterval(room.gameState.timerInterval);
+          const autoSelected = choices[Math.floor(Math.random() * choices.length)];
+          this.selectWord(room, autoSelected);
+        } else {
+          this.io.to(room.code).emit('timerUpdate', {
+            timer: room.gameState.timer,
+            status: room.gameState.status
+          });
+        }
+      } catch (err) {
+        console.error('[TIMER_ERROR] startWordSelection:', err);
         clearInterval(room.gameState.timerInterval);
-        // Auto select a random choice
-        const autoSelected = choices[Math.floor(Math.random() * choices.length)];
-        this.selectWord(room, autoSelected);
-      } else {
-        // Emit timer update
-        this.io.to(room.code).emit('timerUpdate', {
-          timer: room.gameState.timer,
-          status: room.gameState.status
-        });
       }
     }, 1000);
   }
@@ -178,33 +181,38 @@ class GameManager {
     this.broadcastRoomUpdate(room);
 
     room.gameState.timerInterval = setInterval(() => {
-      room.gameState.timer--;
+      try {
+        room.gameState.timer--;
 
-      // Calculate time percentage elapsed
-      const drawTime = room.settings.drawTime;
-      const elapsed = drawTime - room.gameState.timer;
-      const percentage = (elapsed / drawTime) * 100;
+        // Calculate time percentage elapsed
+        const drawTime = room.settings.drawTime;
+        const elapsed = drawTime - room.gameState.timer;
+        const percentage = (elapsed / drawTime) * 100;
 
-      // Update hints (only if hintTime is not 0)
-      const hintTimeSetting = parseInt(room.settings.hintTime, 10);
-      if (!isNaN(hintTimeSetting) && hintTimeSetting > 0) {
-        const hintUpdated = hintManager.updateHint(room.gameState.hintState, percentage);
-        if (hintUpdated) {
-          // Broadcast updated hint
-          this.broadcastRoomUpdate(room);
+        // Update hints (only if hintTime is not 0)
+        const hintTimeSetting = parseInt(room.settings.hintTime, 10);
+        if (!isNaN(hintTimeSetting) && hintTimeSetting > 0) {
+          const hintUpdated = hintManager.updateHint(room.gameState.hintState, percentage);
+          if (hintUpdated) {
+            // Broadcast updated hint
+            this.broadcastRoomUpdate(room);
+          }
         }
-      }
 
-      // Check if timer expired
-      if (room.gameState.timer <= 0) {
+        // Check if timer expired
+        if (room.gameState.timer <= 0) {
+          clearInterval(room.gameState.timerInterval);
+          this.endRound(room);
+        } else {
+          // Broadcast standard timer tick
+          this.io.to(room.code).emit('timerUpdate', {
+            timer: room.gameState.timer,
+            status: room.gameState.status
+          });
+        }
+      } catch (err) {
+        console.error('[TIMER_ERROR] selectWord drawing interval:', err);
         clearInterval(room.gameState.timerInterval);
-        this.endRound(room);
-      } else {
-        // Broadcast standard timer tick
-        this.io.to(room.code).emit('timerUpdate', {
-          timer: room.gameState.timer,
-          status: room.gameState.status
-        });
       }
     }, 1000);
   }
@@ -224,15 +232,20 @@ class GameManager {
     this.broadcastRoomUpdate(room);
 
     room.gameState.timerInterval = setInterval(() => {
-      room.gameState.timer--;
-      if (room.gameState.timer <= 0) {
+      try {
+        room.gameState.timer--;
+        if (room.gameState.timer <= 0) {
+          clearInterval(room.gameState.timerInterval);
+          this.moveToNextTurn(room);
+        } else {
+          this.io.to(room.code).emit('timerUpdate', {
+            timer: room.gameState.timer,
+            status: room.gameState.status
+          });
+        }
+      } catch (err) {
+        console.error('[TIMER_ERROR] endRound interval:', err);
         clearInterval(room.gameState.timerInterval);
-        this.moveToNextTurn(room);
-      } else {
-        this.io.to(room.code).emit('timerUpdate', {
-          timer: room.gameState.timer,
-          status: room.gameState.status
-        });
       }
     }, 1000);
   }
