@@ -102,7 +102,7 @@ export default function Game() {
   };
 
   return (
-    <div className="min-h-screen w-full animated-bg text-white p-2 md:p-4 select-none relative flex flex-col justify-between overflow-hidden">
+    <div className="min-h-screen w-full animated-bg text-white p-2 md:p-4 select-none relative flex flex-col justify-start lg:justify-between overflow-hidden">
       {/* Word selection overlay */}
       <WordPopup isArtist={isArtist} />
 
