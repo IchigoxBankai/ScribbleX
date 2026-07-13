@@ -16,8 +16,17 @@ export default function Game() {
   const [isMuted, setIsMuted] = useState(false);
   const [copied, setCopied] = useState(false);
   const [mobileInputText, setMobileInputText] = useState('');
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
   
   const mobileChatRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const copyRoomCode = () => {
     navigator.clipboard.writeText(room.code);
@@ -199,10 +208,47 @@ export default function Game() {
       {/* ============================================================== */}
       {/* DESKTOP LAYOUT (Hidden on mobile) */}
       {/* ============================================================== */}
-      <div className="hidden lg:grid grid-cols-4 gap-4 items-stretch flex-1 min-h-0 mb-4">
-        {/* Canvas area (Col span 3) */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
-          <div className="flex-1">
+      {!isMobile ? (
+        <div className="hidden lg:grid grid-cols-4 gap-4 items-stretch flex-1 min-h-0 mb-4">
+          {/* Canvas area (Col span 3) */}
+          <div className="lg:col-span-3 flex flex-col gap-4">
+            <div className="flex-1">
+              <Canvas
+                isArtist={isArtist}
+                brushColor={brushColor}
+                brushSize={brushSize}
+                tool={tool}
+                setTool={setTool}
+              />
+            </div>
+            {isArtist && (
+              <div className="block">
+                <BrushToolbar
+                  brushColor={brushColor}
+                  setBrushColor={setBrushColor}
+                  brushSize={brushSize}
+                  setBrushSize={setBrushSize}
+                  tool={tool}
+                  setTool={setTool}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar logs: Scoreboard and Chat (Col span 1) */}
+          <div className="lg:col-span-1 flex flex-col gap-4">
+            <div className="flex-1 min-h-[220px] order-2">
+              <Scoreboard />
+            </div>
+            <div className="flex-1 min-h-[220px] order-1">
+              <Chat isArtist={isArtist} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex lg:hidden flex-col gap-2 overflow-y-auto flex-1">
+          {/* Canvas / Whiteboard area */}
+          <div className="w-full relative flex flex-col justify-center items-center shrink-0 h-auto">
             <Canvas
               isArtist={isArtist}
               brushColor={brushColor}
@@ -210,9 +256,32 @@ export default function Game() {
               tool={tool}
               setTool={setTool}
             />
+
+            {/* Floating chat bubbles on mobile (Scribble/Skribbl style overlay on right) */}
+            <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1 pointer-events-none z-10">
+              {messages.slice(-3).map((m) => {
+                if (m.type === 'system') return null;
+                const isCorrect = m.type === 'correct';
+                return (
+                  <div 
+                    key={m.id} 
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-md border ${
+                      isCorrect 
+                        ? 'bg-green-600/90 text-white border-green-500' 
+                        : 'bg-black/80 text-gray-200 border-white/10'
+                    }`}
+                  >
+                    {!isCorrect && <span className="text-purple-400 font-bold mr-1">{m.sender}:</span>}
+                    <span>{m.text}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+
+          {/* BrushToolbar directly under canvas for Artist */}
           {isArtist && (
-            <div className="block">
+            <div className="shrink-0 p-1 bg-black/25 rounded-xl border border-white/5">
               <BrushToolbar
                 brushColor={brushColor}
                 setBrushColor={setBrushColor}
@@ -223,145 +292,84 @@ export default function Game() {
               />
             </div>
           )}
-        </div>
 
-        {/* Sidebar logs: Scoreboard and Chat (Col span 1) */}
-        <div className="lg:col-span-1 flex flex-col gap-4">
-          <div className="flex-1 min-h-[220px] order-2">
-            <Scoreboard />
-          </div>
-          <div className="flex-1 min-h-[220px] order-1">
-            <Chat isArtist={isArtist} />
-          </div>
-        </div>
-      </div>
-
-      {/* ============================================================== */}
-      {/* MOBILE LAYOUT (Hidden on desktop) */}
-      {/* ============================================================== */}
-      <div className="flex lg:hidden flex-col gap-2 overflow-y-auto flex-1">
-        {/* Canvas / Whiteboard area */}
-        <div className="w-full relative flex flex-col justify-center items-center shrink-0 h-auto">
-          <Canvas
-            isArtist={isArtist}
-            brushColor={brushColor}
-            brushSize={brushSize}
-            tool={tool}
-            setTool={setTool}
-          />
-
-          {/* Floating chat bubbles on mobile (Scribble/Skribbl style overlay on right) */}
-          <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1 pointer-events-none z-10">
-            {messages.slice(-3).map((m) => {
-              if (m.type === 'system') return null;
-              const isCorrect = m.type === 'correct';
-              return (
+          {/* Split Box: Scoreboard (Left 1/3) & Chat Log (Right 2/3) */}
+          <div className="h-[96px] md:h-28 shrink-0 flex border border-white/10 rounded-xl overflow-hidden bg-black/25">
+            {/* Scoreboard List */}
+            <div className="w-[30%] border-r border-white/10 overflow-y-auto p-1.5 space-y-1 bg-black/10">
+              {room.players.map((p) => (
                 <div 
-                  key={m.id} 
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-md border ${
-                    isCorrect 
-                      ? 'bg-green-600/90 text-white border-green-500' 
-                      : 'bg-black/80 text-gray-200 border-white/10'
+                  key={p.id} 
+                  className={`flex items-center gap-1.5 p-1 rounded ${
+                    p.id === playerId ? 'bg-purple-600/35 border border-purple-500/50' : 'bg-white/5'
                   }`}
                 >
-                  {!isCorrect && <span className="text-purple-400 font-bold mr-1">{m.sender}:</span>}
-                  <span>{m.text}</span>
+                  <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 border border-white/10 flex items-center justify-center bg-black/30 text-[9px]">
+                    {p.avatar.startsWith('data:image/') ? (
+                      <img src={p.avatar} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{p.avatar}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[9px] font-bold truncate leading-tight">{p.name}</div>
+                    <div className="text-[8px] text-yellow-400 font-extrabold leading-none">{p.score}</div>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              ))}
+            </div>
 
-        {/* BrushToolbar directly under canvas for Artist */}
-        {isArtist && (
-          <div className="shrink-0 p-1 bg-black/25 rounded-xl border border-white/5">
-            <BrushToolbar
-              brushColor={brushColor}
-              setBrushColor={setBrushColor}
-              brushSize={brushSize}
-              setBrushSize={setBrushSize}
-              tool={tool}
-              setTool={setTool}
-            />
+            {/* Chat Messages Log */}
+            <div ref={mobileChatRef} className="w-[70%] overflow-y-auto p-2 space-y-1 bg-black/20 text-[10px] flex flex-col">
+              {messages.map((m) => {
+                if (m.type === 'system') {
+                  return (
+                    <div key={m.id} className="text-gray-400 italic">
+                      {m.text}
+                    </div>
+                  );
+                }
+                if (m.type === 'correct') {
+                  return (
+                    <div key={m.id} className="text-green-400 font-bold bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/10">
+                      {m.text} 🎉
+                    </div>
+                  );
+                }
+                return (
+                  <div key={m.id} className="text-gray-200">
+                    <span className="font-bold text-purple-300">{m.sender}:</span> {m.text}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        )}
 
-        {/* Split Box: Scoreboard (Left 1/3) & Chat Log (Right 2/3) */}
-        <div className="h-[96px] md:h-28 shrink-0 flex border border-white/10 rounded-xl overflow-hidden bg-black/25">
-          {/* Scoreboard List */}
-          <div className="w-[30%] border-r border-white/10 overflow-y-auto p-1.5 space-y-1 bg-black/10">
-            {room.players.map((p) => (
-              <div 
-                key={p.id} 
-                className={`flex items-center gap-1.5 p-1 rounded ${
-                  p.id === playerId ? 'bg-purple-600/35 border border-purple-500/50' : 'bg-white/5'
-                }`}
+          {/* Full-width Guess chat input row */}
+          {!isArtist ? (
+            <form onSubmit={handleMobileSubmit} className="flex gap-2 p-1 bg-black/35 rounded-xl border border-white/10 shrink-0">
+              <input
+                type="text"
+                value={mobileInputText}
+                onChange={(e) => setMobileInputText(e.target.value)}
+                placeholder="Type your guess here..."
+                className="flex-1 bg-transparent border-none text-white px-3 py-2 rounded-lg text-xs md:text-sm w-full placeholder:text-gray-500 focus:outline-none focus:ring-0"
+              />
+              <button
+                type="submit"
+                disabled={!mobileInputText.trim()}
+                className="p-2 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-900/50 disabled:opacity-50 text-white rounded-lg transition shrink-0"
               >
-                <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 border border-white/10 flex items-center justify-center bg-black/30 text-[9px]">
-                  {p.avatar.startsWith('data:image/') ? (
-                    <img src={p.avatar} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{p.avatar}</span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[9px] font-bold truncate leading-tight">{p.name}</div>
-                  <div className="text-[8px] text-yellow-400 font-extrabold leading-none">{p.score}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Chat Messages Log */}
-          <div ref={mobileChatRef} className="w-[70%] overflow-y-auto p-2 space-y-1 bg-black/20 text-[10px] flex flex-col">
-            {messages.map((m) => {
-              if (m.type === 'system') {
-                return (
-                  <div key={m.id} className="text-gray-400 italic">
-                    {m.text}
-                  </div>
-                );
-              }
-              if (m.type === 'correct') {
-                return (
-                  <div key={m.id} className="text-green-400 font-bold bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/10">
-                    {m.text} 🎉
-                  </div>
-                );
-              }
-              return (
-                <div key={m.id} className="text-gray-200">
-                  <span className="font-bold text-purple-300">{m.sender}:</span> {m.text}
-                </div>
-              );
-            })}
-          </div>
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          ) : (
+            <div className="p-2.5 bg-purple-950/20 text-purple-400 font-bold border border-purple-500/10 text-center text-[10px] rounded-xl shrink-0">
+              You are drawing! Draw the word.
+            </div>
+          )}
         </div>
-
-        {/* Full-width Guess chat input row */}
-        {!isArtist ? (
-          <form onSubmit={handleMobileSubmit} className="flex gap-2 p-1 bg-black/35 rounded-xl border border-white/10 shrink-0">
-            <input
-              type="text"
-              value={mobileInputText}
-              onChange={(e) => setMobileInputText(e.target.value)}
-              placeholder="Type your guess here..."
-              className="flex-1 bg-transparent border-none text-white px-3 py-2 rounded-lg text-xs md:text-sm w-full placeholder:text-gray-500 focus:outline-none focus:ring-0"
-            />
-            <button
-              type="submit"
-              disabled={!mobileInputText.trim()}
-              className="p-2 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-900/50 disabled:opacity-50 text-white rounded-lg transition shrink-0"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-        ) : (
-          <div className="p-2.5 bg-purple-950/20 text-purple-400 font-bold border border-purple-500/10 text-center text-[10px] rounded-xl shrink-0">
-            You are drawing! Draw the word.
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
