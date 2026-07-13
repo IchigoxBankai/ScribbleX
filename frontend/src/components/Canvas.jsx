@@ -287,13 +287,18 @@ export default function Canvas({ isArtist, brushColor, brushSize, tool, setTool 
   };
 
   useEffect(() => {
-    window.canvasUndo = undo;
-    window.canvasRedo = redo;
-    window.canvasClear = () => clearCanvasLocal(true);
+    const handleUndo = () => undo();
+    const handleRedo = () => redo();
+    const handleClear = () => clearCanvasLocal(true);
+
+    window.addEventListener('canvas-undo', handleUndo);
+    window.addEventListener('canvas-redo', handleRedo);
+    window.addEventListener('canvas-clear', handleClear);
+
     return () => {
-      delete window.canvasUndo;
-      delete window.canvasRedo;
-      delete window.canvasClear;
+      window.removeEventListener('canvas-undo', handleUndo);
+      window.removeEventListener('canvas-redo', handleRedo);
+      window.removeEventListener('canvas-clear', handleClear);
     };
   }, [brushColor, brushSize, tool, isArtist, socket]);
 

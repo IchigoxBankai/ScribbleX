@@ -23,9 +23,9 @@ export default function BrushToolbar({
   tool,
   setTool
 }) {
-  const triggerUndo = () => window.canvasUndo && window.canvasUndo();
-  const triggerRedo = () => window.canvasRedo && window.canvasRedo();
-  const triggerClear = () => window.canvasClear && window.canvasClear();
+  const triggerUndo = () => window.dispatchEvent(new CustomEvent('canvas-undo'));
+  const triggerRedo = () => window.dispatchEvent(new CustomEvent('canvas-redo'));
+  const triggerClear = () => window.dispatchEvent(new CustomEvent('canvas-clear'));
 
   return (
     <div className="flex flex-col gap-4 p-4 glass-card rounded-xl border border-white/10 shadow-lg text-white">
