@@ -3,6 +3,13 @@ const hintManager = require('./hintManager');
 const drawingManager = require('./drawingManager');
 const shuffle = require('../utils/shuffle');
 
+function getWordHintRepresentation(word) {
+  if (!word) return '';
+  const words = word.trim().split(/\s+/);
+  const counts = words.map(w => w.replace(/[^\w-]/g, '').length);
+  return counts.join('-');
+}
+
 class GameManager {
   setIo(io) {
     this.io = io;
@@ -20,7 +27,7 @@ class GameManager {
       // Hide choice words and target word from non-artists/guessers
       currentWord: (isArtist || room.gameState.status === 'ROUND_END' || room.gameState.status === 'GAME_END') 
         ? room.gameState.currentWord 
-        : (room.gameState.hintState ? room.gameState.hintState.currentHint.join('') : ''),
+        : getWordHintRepresentation(room.gameState.currentWord),
       wordChoices: isArtist ? room.gameState.wordChoices : []
     };
 

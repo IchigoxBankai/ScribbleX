@@ -17,6 +17,7 @@ export default function Game() {
   const [copied, setCopied] = useState(false);
   const [mobileInputText, setMobileInputText] = useState('');
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   
   const mobileChatRef = useRef(null);
 
@@ -132,7 +133,9 @@ export default function Game() {
       )}
 
       {/* Header bar */}
-      <div className="glass-card p-3 rounded-xl border border-white/10 flex flex-row justify-between items-center gap-2 mb-2 md:mb-4">
+      <div className={`glass-card p-3 rounded-xl border border-white/10 flex-row justify-between items-center gap-2 mb-2 md:mb-4 ${
+        isMobile && isInputFocused ? 'hidden' : 'flex'
+      }`}>
         {/* Left: Round, Artist & Room code */}
         <div className="flex items-center gap-2 md:gap-4">
           <div>
@@ -149,7 +152,7 @@ export default function Game() {
             </div>
           </div>
           <div className="h-6 w-px bg-white/15"></div>
-          <div className="hidden sm:block">
+          <div>
             <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold">Room Code</span>
             <div className="flex items-center gap-1">
               <span className="text-xs font-black font-mono tracking-widest text-white">{room.code}</span>
@@ -169,7 +172,7 @@ export default function Game() {
             <span className="text-base md:text-xl font-black font-mono tracking-[0.15em] md:tracking-[0.25em] text-white select-none whitespace-pre truncate">
               {isArtist
                 ? room.gameState.currentWord.split('').map(char => char === ' ' ? '   ' : char).join(' ')
-                : room.gameState.currentWord.split('').map(char => char === ' ' ? '   ' : char === '_' ? '_ ' : char).join('')}
+                : room.gameState.currentWord}
             </span>
           )}
           {room.gameState.status === 'WORD_SELECTING' && (
@@ -246,6 +249,9 @@ export default function Game() {
           </div>
         </div>
       ) : (
+        /* ============================================================== */
+        /* MOBILE LAYOUT (Hidden on desktop) */
+        /* ============================================================== */
         <div className="flex lg:hidden flex-col gap-2 overflow-y-auto flex-1">
           {/* Canvas / Whiteboard area */}
           <div className="w-full relative flex flex-col justify-center items-center shrink-0 h-auto">
@@ -294,7 +300,9 @@ export default function Game() {
           )}
 
           {/* Split Box: Scoreboard (Left 1/3) & Chat Log (Right 2/3) */}
-          <div className="h-[96px] md:h-28 shrink-0 flex border border-white/10 rounded-xl overflow-hidden bg-black/25">
+          <div className={`h-[96px] md:h-28 shrink-0 flex border border-white/10 rounded-xl overflow-hidden bg-black/25 ${
+            isInputFocused ? 'hidden' : ''
+          }`}>
             {/* Scoreboard List */}
             <div className="w-[30%] border-r border-white/10 overflow-y-auto p-1.5 space-y-1 bg-black/10">
               {room.players.map((p) => (
@@ -352,6 +360,8 @@ export default function Game() {
                 type="text"
                 value={mobileInputText}
                 onChange={(e) => setMobileInputText(e.target.value)}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
                 placeholder="Type your guess here..."
                 className="flex-1 bg-transparent border-none text-white px-3 py-2 rounded-lg text-xs md:text-sm w-full placeholder:text-gray-500 focus:outline-none focus:ring-0"
               />
